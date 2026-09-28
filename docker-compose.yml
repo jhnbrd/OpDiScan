@@ -1,0 +1,16 @@
+services:
+  scanner-web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8074:80"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - scanner-web
