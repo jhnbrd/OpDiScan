@@ -133,14 +133,23 @@ Never commit the `.env` file or publish the tunnel token. The host mapping `8074
 
 ## Deploy with Portainer
 
-1. Push this repository to GitHub, GitLab, or another Git server.
-2. In Portainer, go to **Stacks > Add stack**.
-3. Choose **Repository** and provide the repository URL.
-4. Set the Compose path to `docker-compose.yml`.
-5. Add `CLOUDFLARE_TUNNEL_TOKEN` as an environment variable if using the tunnel profile.
-6. Deploy the stack.
+OpDiScan includes a separate Compose definition for automatic Git-based updates. It uses read-only bind mounts so a Portainer GitOps refresh does not need to rebuild a Docker image.
 
-If the tunnel is managed separately, deploy only `scanner-web` and route the existing tunnel or reverse proxy to the container or to host port 8074.
+1. In Portainer, go to **Stacks > Add stack** and choose **Repository**.
+2. Set the repository URL to `https://github.com/jhnbrd/OpDiScan.git`.
+3. Set the repository reference to `refs/heads/main`.
+4. Set the Compose path to `docker-compose.gitops.yml`.
+5. Enable **Relative path volumes**. This is required for the application-file mounts.
+6. Enable **GitOps updates**.
+7. Choose **Polling** and set the fetch interval to `5 minutes` (or a longer interval if preferred).
+8. Enable **Force redeployment**. Portainer re-clones repositories into a new path, so the container must be recreated to mount the refreshed files.
+9. Optionally enable **Re-pull image** to receive Nginx image updates during redeployment.
+10. Add `CLOUDFLARE_TUNNEL_TOKEN` as an environment variable only if this stack should run the included tunnel profile.
+11. Deploy the stack.
+
+After this one-time setup, Portainer compares the deployed commit with `origin/main` at each interval. When the commit changes, it pulls the repository and recreates the application container with the updated files. Git is the source of truth; edits made directly on the server may be overwritten.
+
+If Cloudflare Tunnel is managed in another stack, leave the `tunnel` profile disabled and route that tunnel to the server's port `8074`. If it is managed by this stack, enable the `tunnel` profile and route it to `http://scanner-web:80`.
 
 ## Updating
 
@@ -199,7 +208,8 @@ The release workflow verifies the tag and publishes a GitHub Release with automa
 |-- sw.js                   Offline cache
 |-- nginx.conf              Static-server configuration
 |-- Dockerfile
-`-- docker-compose.yml
+|-- docker-compose.yml       Local build deployment
+`-- docker-compose.gitops.yml Portainer automatic updates
 ```
 
 ## Contributing
