@@ -1,0 +1,27 @@
+name: Production deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+jobs:
+  register-deployment:
+    name: Register scan.jhnbrd.com
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://scan.jhnbrd.com
+    steps:
+      - name: Confirm production endpoint
+        run: |
+          echo "OpDiScan is deployed through Cloudflare Tunnel."
+          echo "Production URL: https://scan.jhnbrd.com"

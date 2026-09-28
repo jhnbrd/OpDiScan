@@ -6,6 +6,12 @@
 
 <p align="center"><strong>Open-source document scanning, directly in your browser.</strong></p>
 
+<p align="center">
+  <a href="https://github.com/jhnbrd/OpDiScan/actions/workflows/deployment.yml"><img src="https://github.com/jhnbrd/OpDiScan/actions/workflows/deployment.yml/badge.svg" alt="Production deployment"></a>
+  <a href="https://github.com/jhnbrd/OpDiScan/releases"><img src="https://img.shields.io/github/v/release/jhnbrd/OpDiScan?display_name=tag" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/jhnbrd/OpDiScan" alt="MIT License"></a>
+</p>
+
 OpDiScan is a lightweight, self-hostable Progressive Web App that turns a phone or computer camera into a document scanner. It detects page edges, corrects perspective, enhances the result, combines multiple pages, and exports JPG, PNG, or PDF files. There are no accounts, subscriptions, advertisements, or server-side document processing.
 
 > **Public app:** [scan.jhnbrd.com](https://scan.jhnbrd.com)
@@ -78,8 +84,8 @@ Captured pages exist only in the current tab's memory and are cleared when the p
 Clone and start the application:
 
 ```sh
-git clone https://github.com/YOUR_USERNAME/opdiscan.git
-cd opdiscan
+git clone https://github.com/jhnbrd/OpDiScan.git
+cd OpDiScan
 docker compose up -d --build
 ```
 
@@ -146,6 +152,19 @@ docker compose up -d --build
 ```
 
 Browsers may briefly retain the prior service-worker cache after an update. Close all OpDiScan tabs and reopen the app if an old version remains visible.
+
+## Deployment status and releases
+
+Every push to `main` registers [scan.jhnbrd.com](https://scan.jhnbrd.com) as the production environment in GitHub. This reports the existing Cloudflare Tunnel deployment and does not modify or redeploy the server.
+
+To publish a release, create and push a semantic version tag:
+
+```sh
+git tag -a v1.0.0 -m "OpDiScan v1.0.0"
+git push origin v1.0.0
+```
+
+The release workflow verifies the tag and publishes a GitHub Release with automatically generated release notes. It can also be started manually from **Actions > Publish release** for an existing tag.
 
 ## Privacy and safety
 

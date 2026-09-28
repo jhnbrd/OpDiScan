@@ -1,0 +1,46 @@
+name: Publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to release (for example, v1.0.0)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release tag
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSHED_TAG: ${{ github.ref_name }}
+          MANUAL_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "tag=$MANUAL_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$PUSHED_TAG" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out the release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 && exit 0
+          gh release create "$RELEASE_TAG" --verify-tag --generate-notes --title "OpDiScan $RELEASE_TAG"
