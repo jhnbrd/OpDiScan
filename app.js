@@ -17,6 +17,7 @@ const state = {
   stream: null,
   detecting: false,
   corners: null,
+  documentType: null,
   missedFrames: 0,
   pages: [],
   active: -1,
@@ -75,6 +76,7 @@ function stopCamera() {
   state.stream?.getTracks().forEach((track) => track.stop());
   state.stream = null;
   state.corners = null;
+  state.documentType = null;
   camera.srcObject = null;
   placeholder.hidden = false;
   captureButton.disabled = true;
@@ -95,6 +97,7 @@ function showScanner() {
   if (state.stream) {
     placeholder.hidden = true;
     state.corners = null;
+    state.documentType = null;
     state.missedFrames = 0;
     state.detecting = true;
     lastDetection = 0;
@@ -169,6 +172,7 @@ function detectLoop(timestamp) {
 
   const points = findDocument(detectionCanvas);
   if (points) {
+    state.documentType = points.documentType || null;
     const detected = points.map(({ x, y }) => ({
       x: visible.x + x * visible.width / detectionCanvas.width,
       y: visible.y + y * visible.height / detectionCanvas.height,
@@ -182,6 +186,7 @@ function detectLoop(timestamp) {
     state.missedFrames = 0;
   } else if (state.missedFrames++ > 4) {
     state.corners = null;
+    state.documentType = null;
   }
 
   overlay.width = Math.round(stage.width * devicePixelRatio);
@@ -192,7 +197,7 @@ function detectLoop(timestamp) {
   }));
   drawCorners(displayPoints, overlay.width / detectionCanvas.width, overlay.height / detectionCanvas.height);
   statusPill.textContent = displayPoints
-    ? documentLabel(displayPoints)
+    ? (state.documentType === 'id' ? 'ID card detected' : documentLabel(displayPoints))
     : (globalThis.cv?.Mat ? 'Looking for a document...' : 'Loading document detection...');
 }
 

@@ -38,6 +38,46 @@ function pointsFromMat(mat) {
   }));
 }
 
+// A low-contrast white ID may expose only a colored security band. When that
+// narrow band is the strongest contour, extrapolate the surrounding card in
+// the direction of the frame center instead of cropping to the band itself.
+function expandInnerBand(points, frameWidth, frameHeight) {
+  const ordered = orderCorners(points);
+  if (!ordered) return null;
+  const [tl, tr, br, bl] = ordered;
+  const topLength = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+  const bottomLength = Math.hypot(br.x - bl.x, br.y - bl.y);
+  const leftLength = Math.hypot(bl.x - tl.x, bl.y - tl.y);
+  const rightLength = Math.hypot(br.x - tr.x, br.y - tr.y);
+  const longLength = (topLength + bottomLength) / 2;
+  const shortLength = (leftLength + rightLength) / 2;
+  if (longLength / Math.max(1, shortLength) < 2.15) return null;
+
+  const topMid = { x: (tl.x + tr.x) / 2, y: (tl.y + tr.y) / 2 };
+  const bottomMid = { x: (bl.x + br.x) / 2, y: (bl.y + br.y) / 2 };
+  const shortX = (bottomMid.x - topMid.x) / Math.max(1, shortLength);
+  const shortY = (bottomMid.y - topMid.y) / Math.max(1, shortLength);
+  const longX = ((tr.x - tl.x) + (br.x - bl.x)) / Math.max(1, topLength + bottomLength);
+  const longY = ((tr.y - tl.y) + (br.y - bl.y)) / Math.max(1, topLength + bottomLength);
+  const center = { x: (topMid.x + bottomMid.x) / 2, y: (topMid.y + bottomMid.y) / 2 };
+  const towardFrameCenter = ((frameWidth / 2 - center.x) * shortX + (frameHeight / 2 - center.y) * shortY) >= 0 ? 1 : -1;
+  const interior = shortLength * 2.7;
+  const exterior = shortLength * 0.25;
+  const sidePadding = longLength * 0.12;
+  const topExtension = towardFrameCenter < 0 ? interior : exterior;
+  const bottomExtension = towardFrameCenter > 0 ? interior : exterior;
+
+  return [
+    { x: tl.x - shortX * topExtension - longX * sidePadding, y: tl.y - shortY * topExtension - longY * sidePadding },
+    { x: tr.x - shortX * topExtension + longX * sidePadding, y: tr.y - shortY * topExtension + longY * sidePadding },
+    { x: br.x + shortX * bottomExtension + longX * sidePadding, y: br.y + shortY * bottomExtension + longY * sidePadding },
+    { x: bl.x + shortX * bottomExtension - longX * sidePadding, y: bl.y + shortY * bottomExtension - longY * sidePadding },
+  ].map(({ x, y }) => ({
+    x: clamp(x, 0, frameWidth - 1),
+    y: clamp(y, 0, frameHeight - 1),
+  }));
+}
+
 export function documentLabel(points) {
   const ordered = orderCorners(points);
   if (!ordered) return 'Looking for a document...';
@@ -89,7 +129,7 @@ export function findDocument(canvas) {
                 if (approx.rows !== 4 || !cv.isContourConvex(approx)) continue;
                 const points = pointsFromMat(approx);
                 const angleScore = rightAngleScore(points);
-                if (angleScore < 0.42) continue;
+                if (angleScore < 0.32) continue;
                 const area = Math.abs(cv.contourArea(approx));
                 const score = area * (0.6 + angleScore * 0.4);
                 if (score > bestScore) {
@@ -109,7 +149,18 @@ export function findDocument(canvas) {
         hierarchy.delete();
       }
     }
-    return orderCorners(best);
+
+    let documentType = null;
+    if (bestScore < frameArea * 0.18) {
+      const expanded = expandInnerBand(best, canvas.width, canvas.height);
+      if (expanded) {
+        best = expanded;
+        documentType = 'id';
+      }
+    }
+    const result = orderCorners(best);
+    if (result && documentType) Object.defineProperty(result, 'documentType', { value: documentType });
+    return result;
   } catch (error) {
     console.warn('Document detection failed', error);
     return null;

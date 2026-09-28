@@ -5,4 +5,24 @@
 Thumbs.db
 node_modules/
 dist/
+coverage/
+.cache/
 *.log
+
+# Local editors and browser test profiles
+.vscode/
+.idea/
+.edge-*/
+
+# Temporary scanner regression artifacts
+/opencv-test.js
+/case-*.png
+/capture-*.png
+/capture-*.jpg
+/seek-*.png
+/seek-*.jpg
+/detector-*.png
+/detector-*.jpg
+/detector-*.txt
+/video-*.png
+/video-*.jpg
