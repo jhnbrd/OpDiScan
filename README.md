@@ -144,7 +144,7 @@ OpDiScan includes a separate Compose definition for automatic Git-based updates.
 7. Choose **Polling** and set the fetch interval to `5 minutes` (or a longer interval if preferred).
 8. Enable **Force redeployment**. Portainer re-clones repositories into a new path, so the container must be recreated to mount the refreshed files.
 9. Optionally enable **Re-pull image** to receive Nginx image updates during redeployment.
-10. Add `CLOUDFLARE_TUNNEL_TOKEN` as an environment variable only if this stack should run the included tunnel profile.
+10. If this stack should run the included tunnel, add `COMPOSE_PROFILES=tunnel` and `CLOUDFLARE_TUNNEL_TOKEN=your-token` as environment variables. Otherwise leave the tunnel profile disabled.
 11. Deploy the stack.
 
 After this one-time setup, Portainer compares the deployed commit with `origin/main` at each interval. When the commit changes, it pulls the repository and recreates the application container with the updated files. Git is the source of truth; edits made directly on the server may be overwritten.
